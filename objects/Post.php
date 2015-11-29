@@ -99,10 +99,10 @@ class Post {
 			->setTwoFactorCode($_POST['2fa'] ?: '');
 
 		$loginData = $user->doLogin($cookies);
-		if (!$loginData['success']) die(json_encode($loginData));
+		if (!$loginData['success']) return $loginData;
 
 		$hasPhone = $loginData['oauth']->hasPhone();
-		if (!$hasPhone) die(json_encode(['phone_needed' => true]));
+		if (!$hasPhone) return ['phone_needed' => true];
 
 		$authData = $loginData['oauth']->addAuthenticator();
 
