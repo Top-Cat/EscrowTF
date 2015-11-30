@@ -84,9 +84,9 @@ class Oauth {
 
 	public function doConf($id, $key, $op) {
 		$time = time();
-		$key = SteamGuard::getMobileKeyFor($this->oauth->identity_secret, $time, $op);
+		$authKey = SteamGuard::getMobileKeyFor($this->oauth->identity_secret, $time, $op);
 		$res = Net::doRequest(
-			"https://steamcommunity.com/mobileconf/ajaxop?op={$op}&p=escrowtf:{$this->oauth->steamid}&a={$this->oauth->steamid}&k={$key}&t={$time}&m=android&tag={$op}&cid={$id}&ck={$key}",
+			"https://steamcommunity.com/mobileconf/ajaxop?op={$op}&p=escrowtf:{$this->oauth->steamid}&a={$this->oauth->steamid}&k={$authKey}&t={$time}&m=android&tag={$op}&cid={$id}&ck={$key}",
 			$this->generateCookies()
 		);
 	}
