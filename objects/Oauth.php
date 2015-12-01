@@ -34,8 +34,9 @@ class Oauth {
 	}
 
 	public function getConfirmations() {
-		$time = time() - $this->oauth->drift;
-		$key = SteamGuard::getMobileKeyFor($this->oauth->identity_secret, $time, 'conf');
+		$time = time() - $this->getDrift();
+		$key = urlencode(SteamGuard::getMobileKeyFor($this->oauth->identity_secret, $time, 'conf'));
+
 		$res = Net::doRequest(
 			"https://steamcommunity.com/mobileconf/conf?p=escrowtf:{$this->oauth->steamid}&a={$this->oauth->steamid}&k={$key}&t={$time}&m=android&tag=conf",
 			$this->generateCookies()
@@ -83,12 +84,23 @@ class Oauth {
 	}
 
 	public function doConf($id, $key, $op) {
-		$time = time();
-		$authKey = SteamGuard::getMobileKeyFor($this->oauth->identity_secret, $time, $op);
+		$time = time() - $this->getDrift();
+		$authKey = urlencode(SteamGuard::getMobileKeyFor($this->oauth->identity_secret, $time, $op));
 		$res = Net::doRequest(
 			"https://steamcommunity.com/mobileconf/ajaxop?op={$op}&p=escrowtf:{$this->oauth->steamid}&a={$this->oauth->steamid}&k={$authKey}&t={$time}&m=android&tag={$op}&cid={$id}&ck={$key}",
 			$this->generateCookies()
 		);
+	}
+
+	public function getDrift() {
+		$res = Net::doRequest(
+			'https://api.steampowered.com/ITwoFactorService/QueryTime/v0001',
+			[],
+			['steamid' => 0]
+		);
+
+		$out = json_decode($res[1], true);
+		return time() - intval($out['response']['server_time']);
 	}
 
 	public function addAuthenticator() {
