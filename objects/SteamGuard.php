@@ -26,7 +26,6 @@ class SteamGuard {
 	public static function getMobileKeyFor($secret, $time, $action = null) {
 		$identitySecret = base64_decode($secret);
 
-		$n2 = isset($action) ? min(40, 8 + strlen($action)) : 8;
 		$array = $action ? substr($action, 0, 32) : '';
 		for ($i = 8; $i > 0; $i--) {
 			$array = chr($time & 0xFF) . $array;
