@@ -160,6 +160,11 @@ Confirmation.prototype.callback = function(op) {
 Confirmation.ajaxResponse = function(r) {
 	checkResult(r);
 
+	if (r.authdata) {
+		localStorage.setItem('steamauth', r.authdata);
+		steamData = r.authdata;
+	}
+
 	$('#conf').empty();
 	for (x in r.conf) {
 		new Confirmation(r.conf[x]);

@@ -20,7 +20,7 @@ class Net {
 		return $out;
 	}
 
-	public static function doRequest($url, $cookies, $post = null, $ref = 'https://steamcommunity.com') {
+	public static function doRequest($url, $cookies = [], $post = null, $ref = 'https://steamcommunity.com') {
 		// create a new cURL resource
 		$ch = curl_init();
 

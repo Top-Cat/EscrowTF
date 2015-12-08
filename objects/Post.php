@@ -32,16 +32,22 @@ class Post {
 
 		if ($_POST['action'] == 'get_code') {
 			$code = SteamGuard::generateSteamGuardCode(self::$authData->shared_secret);
-			return [
+			$out = [
 				'code' => $code[0],
 				'rcode' => self::$authData->revocation_code,
 				'time' => $code[1]
 			];
 		} elseif ($_POST['action'] == 'get_conf') {
-			return ['success' => true, 'conf' => $auth->getConfirmations()];
+			$out = ['success' => true, 'conf' => $auth->getConfirmations()];
 		} elseif ($_POST['action'] == 'revoke_code') {
-			return $auth->revoke();
+			$out = $auth->revoke();
 		}
+
+		$authData = $auth->getEnc($_POST['ekey']);
+		if ($authData != $_POST['authdata']) {
+			$out['authdata'] = $authData;
+		}
+		return $out;
 	}
 
 	private static function handleSMS() {
@@ -107,17 +113,17 @@ class Post {
 		$authData = $loginData['oauth']->addAuthenticator();
 
 		$authData = array_merge($authData, [
-			'drift' => time() - $authData['server_time'],
-			'access_token' => $oauth->oauth_token,
-			'wgtoken' => $oauth->wgtoken,
-			'wgtoken_secure' => $oauth->wgtoken_secure,
-			'steamid' => $oauth->steamid
+			'access_token' => $loginData['oauth']->oauth_token,
+			'wgtoken' => $loginData['oauth']->wgtoken,
+			'wgtoken_secure' => $loginData['oauth']->wgtoken_secure,
+			'steamid' => $loginData['oauth']->steamid
 		]);
 
 		return [
 			'sms_needed' => true,
 			'revocation_code' => $authData['revocation_code'],
-			'authdata' => Crypt::encrypt($authData, $_POST['key'])
+			'authdata' => Crypt::encrypt($authData, $_POST['ekey']),
+			'raw' => $authData
 		];
 	}
 

@@ -4,8 +4,18 @@ class Oauth {
 
 	private $oauth;
 
+	public $oauth_token;
+	public $wgtoken;
+	public $wgtoken_secure;
+	public $steamid;
+
 	public function __construct($loginData) {
 		$this->oauth = $loginData;
+
+		$this->oauth_token = $this->oauth->oauth_token;
+		$this->wgtoken = $this->oauth->wgtoken;
+		$this->wgtoken_secure = $this->oauth->wgtoken_secure;
+		$this->steamid = $this->oauth->steamid;
 	}
 
 	private function generateCookies() {
@@ -16,6 +26,10 @@ class Oauth {
 			'steamLoginSecure' => $this->oauth->steamid.'%7C%7C'.$this->oauth->wgtoken_secure,
 			'dob' => ''
 		]);
+	}
+
+	public function getEnc($key) {
+		return Crypt::encrypt($this->oauth, $key);
 	}
 
 	public function hasPhone() {
@@ -34,13 +48,22 @@ class Oauth {
 	}
 
 	public function getConfirmations() {
+		$tries = 0;
 		$time = time() - $this->getDrift();
 		$key = urlencode(SteamGuard::getMobileKeyFor($this->oauth->identity_secret, $time, 'conf'));
 
-		$res = Net::doRequest(
-			"https://steamcommunity.com/mobileconf/conf?p=escrowtf:{$this->oauth->steamid}&a={$this->oauth->steamid}&k={$key}&t={$time}&m=android&tag=conf",
-			$this->generateCookies()
-		);
+		do {
+			$res = Net::doRequest(
+				"https://steamcommunity.com/mobileconf/conf?p=escrowtf:{$this->oauth->steamid}&a={$this->oauth->steamid}&k={$key}&t={$time}&m=android&tag=conf",
+				$this->generateCookies()
+			);
+
+			if ($res[0]['steamLogin'] !== 'deleted') {
+				break;
+			}
+
+			$this->refreshSession();
+		} while ($tries++ < 3);
 
 		$out = [];
 		$doc = new DOMDocument();
@@ -119,5 +142,21 @@ class Oauth {
 
 		$out = json_decode($res[1], true);
 		return $out['response'];
+	}
+
+	public function refreshSession() {
+		$res = Net::doRequest(
+			'https://api.steampowered.com/IMobileAuthService/GetWGToken/v0001',
+			[],
+			[
+				'access_token' => $this->oauth->access_token
+			]
+		);
+
+		$out = json_decode($res[1], true);
+		$this->oauth->wgtoken = $out['response']['token'];
+		$this->oauth->wgtoken_secure = $out['response']['token_secure'];
+
+		return;
 	}
 }
